@@ -12,8 +12,8 @@ with open('EncodeFile.p', 'rb') as file:
 encodeListKnown, studentIds = encodeListKnownWithIds
 print("Encode File Loaded")
 
-def markAttendance(id):
 
+def markAttendance(id):
     # Get the current date and time
     now = datetime.now()
 
@@ -21,7 +21,7 @@ def markAttendance(id):
     year_folder = now.strftime('%Y')
 
     # Create a directory path for the attendance records with the year as the folder name
-    attendance_dir = os.path.join('../FACE/Attendance', year_folder)
+    attendance_dir = os.path.join('../Attendance System/Attendance', year_folder)
 
     # Check if the attendance directory exists, and if not, create it
     if not os.path.exists(attendance_dir):
@@ -43,8 +43,7 @@ def markAttendance(id):
     # If the name is not already in the attendance list, append the name and current time to the CSV file
     if id not in nameList:
         with open(csv_file, 'a') as f:
-                f.write(f'{id},{now.strftime("%H:%M:%S")}\n')
-
+            f.write(f'{id},{now.strftime("%H:%M:%S")}\n')
 
 
 cap = cv2.VideoCapture(0)
@@ -78,7 +77,7 @@ while True:
             matchIndex = np.argmin(faceDis)
 
             print("matchIndex", matchIndex)
-            print("f",faceLoc)
+            print("f", faceLoc)
 
             if matches[matchIndex]:
                 id = studentIds[matchIndex]
@@ -90,7 +89,6 @@ while True:
                 imgBackground = cvzone.cornerRect(imgBackground, bbox, rt=0)
 
                 markAttendance(id)
-
 
         cv2.imshow("Attendance System", imgBackground)
         # If the 'q' key is pressed, break out of the loop and stop the video capture
