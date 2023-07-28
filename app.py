@@ -5,6 +5,7 @@ import numpy as np
 import cvzone
 from datetime import datetime
 import os
+import asyncio
 
 print("Loading Encode File ...")
 with open('EncodeFile.p', 'rb') as file:
@@ -12,8 +13,7 @@ with open('EncodeFile.p', 'rb') as file:
 encodeListKnown, studentIds = encodeListKnownWithIds
 print("Encode File Loaded")
 
-
-def markAttendance(id):
+async def markAttendanceAsync(id):
     # Get the current date and time
     now = datetime.now()
 
@@ -46,55 +46,64 @@ def markAttendance(id):
             f.write(f'{id},{now.strftime("%H:%M:%S")}\n')
 
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 640)
-cap.set(4, 480)
+async def main():
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 640)
+    cap.set(4, 480)
 
-imgBackground = cv2.imread('background.png')
+    imgBackground = cv2.imread('background.png')
 
-while True:
-    # Read frames from the webcam
-    success, img = cap.read()
+    while True:
+        # Read frames from the webcam
+        success, img = cap.read()
 
-    # Resize the frame for faster face recognition
-    imgS = cv2.resize(img, (0, 0), None, 0.25, 0.25)
-    imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB)
+        # Resize the frame for faster face recognition
+        imgS = cv2.resize(img, (0, 0), None, 0.25, 0.25)
+        imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB)
 
-    # Detect face locations and encodings in the current frame
-    faceCurFrame = face_recognition.face_locations(imgS)
-    encodeCurFrame = face_recognition.face_encodings(imgS, faceCurFrame)
+        # Detect face locations and encodings in the current frame
+        faceCurFrame = face_recognition.face_locations(imgS)
+        encodeCurFrame = face_recognition.face_encodings(imgS, faceCurFrame)
 
-    imgBackground[162:162 + 480, 55:55 + 640] = img
+        imgBackground[162:162 + 480, 55:55 + 640] = img
 
-    if faceCurFrame:
-        for encodeFace, faceLoc in zip(encodeCurFrame, faceCurFrame):
-            # Compare face encodings to known encodings
-            matches = face_recognition.compare_faces(encodeListKnown, encodeFace)
-            faceDis = face_recognition.face_distance(encodeListKnown, encodeFace)
-            print("matches", matches)
-            print("faceDis", faceDis)
+        if faceCurFrame:
+            tasks = []
+            for encodeFace, faceLoc in zip(encodeCurFrame, faceCurFrame):
+                # Compare face encodings to known encodings
+                matches = face_recognition.compare_faces(encodeListKnown, encodeFace)
+                faceDis = face_recognition.face_distance(encodeListKnown, encodeFace)
+                print("matches", matches)
+                print("faceDis", faceDis)
 
-            matchIndex = np.argmin(faceDis)
+                matchIndex = np.argmin(faceDis)
 
-            print("matchIndex", matchIndex)
-            print("f", faceLoc)
+                print("matchIndex", matchIndex)
+                print("face_location ", faceLoc)
 
-            if matches[matchIndex]:
-                id = studentIds[matchIndex]
-                print(studentIds[matchIndex])
-                # If a known face is detected
-                y1, x2, y2, x1 = faceLoc
-                y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
-                bbox = 55 + x1, 162 + y1, x2 - x1, y2 - y1
-                imgBackground = cvzone.cornerRect(imgBackground, bbox, rt=0)
+                if matches[matchIndex]:
+                    id = studentIds[matchIndex]
+                    print(studentIds[matchIndex])
+                    # If a known face is detected
+                    y1, x2, y2, x1 = faceLoc
+                    y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
+                    bbox = 55 + x1, 162 + y1, x2 - x1, y2 - y1
+                    imgBackground = cvzone.cornerRect(imgBackground, bbox, rt=0)
 
-                markAttendance(id)
+                    tasks.append(markAttendanceAsync(id))
+
+            if tasks:
+                await asyncio.gather(*tasks)
 
         cv2.imshow("Attendance System", imgBackground)
         # If the 'q' key is pressed, break out of the loop and stop the video capture
         if cv2.waitKey(33) & 0xFF == ord('q'):
             break
 
-# Release the video capture and close the OpenCV window
-cap.release()
-cv2.destroyAllWindows()
+    # Release the video capture and close the OpenCV window
+    cap.release()
+    cv2.destroyAllWindows()
+
+# Run the asyncio event loop
+if __name__ == "__main__":
+    asyncio.run(main())
