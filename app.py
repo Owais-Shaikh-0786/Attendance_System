@@ -96,6 +96,7 @@ async def main():
                 await asyncio.gather(*tasks)
 
         cv2.imshow("Attendance System", imgBackground)
+
         # If the 'q' key is pressed, break out of the loop and stop the video capture
         if cv2.waitKey(33) & 0xFF == ord('q'):
             break
