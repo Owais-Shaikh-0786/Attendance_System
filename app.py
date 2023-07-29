@@ -3,7 +3,7 @@ import pickle
 import face_recognition
 import numpy as np
 import cvzone
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import asyncio
 
@@ -42,7 +42,17 @@ async def markattendanceasync(stu_id):
     # Check if the CSV file for the current date exists, and if not, create it and add the header
     if not os.path.exists(csv_file):
         with open(csv_file, 'w') as f:
-            f.write('Name,Time\n')
+            f.write('Name,Time,Total Attendance\n')
+
+    # Read the existing total attendance from the previous CSV file
+    previous_total_attendance = {}
+    previous_csv_file = os.path.join(attendance_dir, f'{(now - timedelta(days=1)).strftime("%Y-%m-%d")}.csv')
+    if os.path.exists(previous_csv_file):
+        with open(previous_csv_file, 'r') as f:
+            lines = f.readlines()[1:]
+            for line in lines:
+                name, _, total_attendance = line.strip().split(',')
+                previous_total_attendance[name] = int(total_attendance)
 
     # Read the existing lines from the CSV file to check if the name already exists in the attendance list
     with open(csv_file, 'r') as f:
@@ -52,7 +62,7 @@ async def markattendanceasync(stu_id):
     # If the name is not already in the attendance list, append the name and current time to the CSV file
     if stu_id not in nameList:
         with open(csv_file, 'a') as f:
-            f.write(f'{stu_id},{now.strftime("%H:%M:%S")}\n')
+            f.write(f'{stu_id},{now.strftime("%H:%M:%S")},{previous_total_attendance.get(stu_id, 0) + 1}\n')
 
 
 async def main():
