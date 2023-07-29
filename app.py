@@ -7,13 +7,22 @@ from datetime import datetime
 import os
 import asyncio
 
+# Importing the mode images into a list
+folderModePath = 'Resources'
+modePathList = os.listdir(folderModePath)
+imgModeList = []
+for path in modePathList:
+    imgModeList.append(cv2.imread(os.path.join(folderModePath, path)))
+print(len(imgModeList))
+
 print("Loading Encode File ...")
 with open('EncodeFile.p', 'rb') as file:
     encodeListKnownWithIds = pickle.load(file)
 encodeListKnown, studentIds = encodeListKnownWithIds
 print("Encode File Loaded")
 
-async def markAttendanceAsync(id):
+
+async def markattendanceasync(stu_id):
     # Get the current date and time
     now = datetime.now()
 
@@ -40,10 +49,11 @@ async def markAttendanceAsync(id):
         lines = f.readlines()
         nameList = [line.split(',')[0] for line in lines]
 
+
     # If the name is not already in the attendance list, append the name and current time to the CSV file
-    if id not in nameList:
+    if stu_id not in nameList:
         with open(csv_file, 'a') as f:
-            f.write(f'{id},{now.strftime("%H:%M:%S")}\n')
+            f.write(f'{stu_id},{now.strftime("%H:%M:%S")}\n')
 
 
 async def main():
@@ -52,6 +62,7 @@ async def main():
     cap.set(4, 480)
 
     imgBackground = cv2.imread('background.png')
+
 
     while True:
         # Read frames from the webcam
@@ -66,6 +77,8 @@ async def main():
         encodeCurFrame = face_recognition.face_encodings(imgS, faceCurFrame)
 
         imgBackground[162:162 + 480, 55:55 + 640] = img
+
+        imgBackground[44:44 + 633, 800:800 + 414] = imgModeList[0]
 
         if faceCurFrame:
             tasks = []
@@ -82,15 +95,16 @@ async def main():
                 print("face_location ", faceLoc)
 
                 if matches[matchIndex]:
-                    id = studentIds[matchIndex]
+                    stu_id = studentIds[matchIndex]
                     print(studentIds[matchIndex])
                     # If a known face is detected
                     y1, x2, y2, x1 = faceLoc
                     y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
                     bbox = 55 + x1, 162 + y1, x2 - x1, y2 - y1
                     imgBackground = cvzone.cornerRect(imgBackground, bbox, rt=0)
+                    tasks.append(markattendanceasync(stu_id))
 
-                    tasks.append(markAttendanceAsync(id))
+                    imgBackground[44:44 + 633, 800:800 + 414] = imgModeList[1]
 
             if tasks:
                 await asyncio.gather(*tasks)
@@ -104,6 +118,7 @@ async def main():
     # Release the video capture and close the OpenCV window
     cap.release()
     cv2.destroyAllWindows()
+
 
 # Run the asyncio event loop
 if __name__ == "__main__":

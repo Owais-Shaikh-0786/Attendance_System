@@ -3,7 +3,7 @@ import face_recognition
 import pickle
 import os
 
-folderPath = 'dataSet'
+folderPath = 'DataSet'
 pathList = os.listdir(folderPath)
 print("List of Images: ", pathList)
 
