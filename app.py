@@ -56,13 +56,13 @@ async def markattendanceasync(stu_id):
             f.write(f'{stu_id},{now.strftime("%H:%M:%S")}\n')
 
 
+
 async def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, 640)
     cap.set(4, 480)
 
     imgBackground = cv2.imread('background.png')
-
 
     while True:
         # Read frames from the webcam
@@ -94,9 +94,14 @@ async def main():
                 print("matchIndex", matchIndex)
                 print("face_location ", faceLoc)
 
+                if not matches[matchIndex] and faceDis[matchIndex] >= 0.4:
+                    # If an unknown face is detected with similarity >= 0.4, print "unknown" and skip marking attendance
+                    print("student name: unknown")
+                    continue
+
                 if matches[matchIndex]:
                     stu_id = studentIds[matchIndex]
-                    print(studentIds[matchIndex])
+                    print("student name:", studentIds[matchIndex])
                     # If a known face is detected
                     y1, x2, y2, x1 = faceLoc
                     y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
@@ -115,7 +120,7 @@ async def main():
         if cv2.waitKey(33) & 0xFF == ord('q'):
             break
 
-    # Release the video capture and close the OpenCV window
+        # Release the video capture and close the OpenCV window
     cap.release()
     cv2.destroyAllWindows()
 
