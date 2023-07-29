@@ -49,12 +49,10 @@ async def markattendanceasync(stu_id):
         lines = f.readlines()
         nameList = [line.split(',')[0] for line in lines]
 
-
     # If the name is not already in the attendance list, append the name and current time to the CSV file
     if stu_id not in nameList:
         with open(csv_file, 'a') as f:
             f.write(f'{stu_id},{now.strftime("%H:%M:%S")}\n')
-
 
 
 async def main():
@@ -94,10 +92,11 @@ async def main():
                 print("matchIndex", matchIndex)
                 print("face_location ", faceLoc)
 
+                # If an unknown face is detected with the minimum similarity >= 0.4, print "unknown" and skip marking
+
                 if min(faceDis) >= 0.4:
                     print("student name: unknown")
                     continue
-
 
                 if matches[matchIndex]:
                     stu_id = studentIds[matchIndex]
