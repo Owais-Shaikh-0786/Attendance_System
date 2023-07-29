@@ -94,10 +94,10 @@ async def main():
                 print("matchIndex", matchIndex)
                 print("face_location ", faceLoc)
 
-                if not matches[matchIndex] and faceDis[matchIndex] >= 0.4:
-                    # If an unknown face is detected with similarity >= 0.4, print "unknown" and skip marking attendance
+                if min(faceDis) >= 0.4:
                     print("student name: unknown")
                     continue
+
 
                 if matches[matchIndex]:
                     stu_id = studentIds[matchIndex]
