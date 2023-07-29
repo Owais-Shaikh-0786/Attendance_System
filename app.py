@@ -120,7 +120,7 @@ async def main():
         if cv2.waitKey(33) & 0xFF == ord('q'):
             break
 
-        # Release the video capture and close the OpenCV window
+        # Release the video capture and close the  window
     cap.release()
     cv2.destroyAllWindows()
 
