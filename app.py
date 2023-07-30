@@ -30,7 +30,26 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 
-async def markattendanceasync(stu_id):
+def get_attendance_status(class_start_time, attendance_cutoff_time):
+    now = datetime.now().time()
+
+    if class_start_time < now <= attendance_cutoff_time:
+        return "Present"
+    elif now >= attendance_cutoff_time:
+        return "Late"
+    else:
+        return "Absent"
+
+def get_class_time_input():
+    class_start_time_str = input("Enter the class start time (format: HH:MM): ")
+    attendance_cutoff_time_str = input("Enter the attendance cutoff time (format: HH:MM): ")
+
+    class_start_time = datetime.strptime(class_start_time_str, "%H:%M").time()
+    attendance_cutoff_time = datetime.strptime(attendance_cutoff_time_str, "%H:%M").time()
+
+    return class_start_time, attendance_cutoff_time
+
+async def markattendanceasync(stu_id, class_start_time, attendance_cutoff_time):
     # Get the current date and time
     now = datetime.now()
 
@@ -38,6 +57,9 @@ async def markattendanceasync(stu_id):
     year_folder = now.strftime('%Y')
     month_folder = now.strftime('%B')  # Use full month name (e.g., "July") instead of the numerical representation
     date_folder = now.strftime('%d')
+
+    # Determine the student's attendance status based on the current time
+    student_status = get_attendance_status(class_start_time, attendance_cutoff_time)
 
     # Create a reference to the "Attendance" collection in Firestore
     attendance_ref = db.collection("Attendance")
@@ -59,13 +81,16 @@ async def markattendanceasync(stu_id):
 
     # Update the student's attendance data for the current date and time
     student_data = {
-        "name": stu_id,
-        "time": current_time
+        'name': stu_id,
+        'status': student_status,
+        'time': current_time
     }
     student_folder_ref.set(student_data)
 
-
 async def main():
+    # Ask the user for the class start time and attendance cutoff time
+    class_start_time, attendance_cutoff_time = get_class_time_input()
+
     cap = cv2.VideoCapture(0)
     cap.set(3, 640)
     cap.set(4, 480)
@@ -115,7 +140,7 @@ async def main():
                     y1, x2, y2, x1 = y1 * 4, x2 * 4, y2 * 4, x1 * 4
                     bbox = 55 + x1, 162 + y1, x2 - x1, y2 - y1
                     imgBackground = cvzone.cornerRect(imgBackground, bbox, rt=0)
-                    tasks.append(markattendanceasync(stu_id))
+                    tasks.append(markattendanceasync(stu_id, class_start_time, attendance_cutoff_time))
 
                     imgBackground[44:44 + 633, 800:800 + 414] = imgModeList[1]
 
