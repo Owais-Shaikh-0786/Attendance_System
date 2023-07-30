@@ -3,9 +3,12 @@ import pickle
 import face_recognition
 import numpy as np
 import cvzone
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 import asyncio
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
 # Importing the mode images into a list
 folderModePath = 'Resources'
@@ -21,48 +24,45 @@ with open('EncodeFile.p', 'rb') as file:
 encodeListKnown, studentIds = encodeListKnownWithIds
 print("Encode File Loaded")
 
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
 
 async def markattendanceasync(stu_id):
     # Get the current date and time
     now = datetime.now()
 
-    # Extract the year from the current date
+    # Extract the year, month, and date from the current date
     year_folder = now.strftime('%Y')
+    month_folder = now.strftime('%B')  # Use full month name (e.g., "July") instead of the numerical representation
+    date_folder = now.strftime('%d')
 
-    # Create a directory path for the attendance records with the year as the folder name
-    attendance_dir = os.path.join('../Attendance System/Attendance', year_folder)
+    # Create a reference to the "Attendance" collection in Firestore
+    attendance_ref = db.collection("Attendance")
 
-    # Check if the attendance directory exists, and if not, create it
-    if not os.path.exists(attendance_dir):
-        os.makedirs(attendance_dir)
+    # Create a reference to the main folder with the year as the document name
+    year_doc_ref = attendance_ref.document(year_folder)
 
-    # Create a path for the CSV file with the current date as the name
-    csv_file = os.path.join(attendance_dir, f'{now.strftime("%Y-%m-%d")}.csv')
+    # Create a reference to the subfolder with the month as the document name
+    month_doc_ref = year_doc_ref.collection(month_folder)
 
-    # Check if the CSV file for the current date exists, and if not, create it and add the header
-    if not os.path.exists(csv_file):
-        with open(csv_file, 'w') as f:
-            f.write('Name,Time,Total Attendance\n')
+    # Create a reference to the student's sub-subfolder with the student_id as the document name
+    student_doc_ref = month_doc_ref.document(date_folder)
 
-    # Read the existing total attendance from the previous CSV file
-    previous_total_attendance = {}
-    previous_csv_file = os.path.join(attendance_dir, f'{(now - timedelta(days=1)).strftime("%Y-%m-%d")}.csv')
-    if os.path.exists(previous_csv_file):
-        with open(previous_csv_file, 'r') as f:
-            lines = f.readlines()[1:]
-            for line in lines:
-                name, _, total_attendance = line.strip().split(',')
-                previous_total_attendance[name] = int(total_attendance)
+    # Get the current time
+    current_time = now.strftime("%H:%M:%S")
 
-    # Read the existing lines from the CSV file to check if the name already exists in the attendance list
-    with open(csv_file, 'r') as f:
-        lines = f.readlines()
-        nameList = [line.split(',')[0] for line in lines]
+    # Create a reference to the student's folder with the student name as the document name
+    student_folder_ref = student_doc_ref.collection("Students").document(stu_id)
 
-    # If the name is not already in the attendance list, append the name and current time to the CSV file
-    if stu_id not in nameList:
-        with open(csv_file, 'a') as f:
-            f.write(f'{stu_id},{now.strftime("%H:%M:%S")},{previous_total_attendance.get(stu_id, 0) + 1}\n')
+    # Update the student's attendance data for the current date and time
+    student_data = {
+        "name": stu_id,
+        "time": current_time
+    }
+    student_folder_ref.set(student_data)
 
 
 async def main():
@@ -103,7 +103,6 @@ async def main():
                 print("face_location ", faceLoc)
 
                 # If an unknown face is detected with the minimum similarity >= 0.4, print "unknown" and skip marking
-
                 if min(faceDis) >= 0.4:
                     print("student name: unknown")
                     continue
@@ -129,11 +128,10 @@ async def main():
         if cv2.waitKey(33) & 0xFF == ord('q'):
             break
 
-        # Release the video capture and close the  window
+    # Release the video capture and close the window
     cap.release()
     cv2.destroyAllWindows()
 
 
-# Run the asyncio event loop
 if __name__ == "__main__":
     asyncio.run(main())
