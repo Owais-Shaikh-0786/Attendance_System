@@ -37,8 +37,7 @@ def get_attendance_status(class_start_time, attendance_cutoff_time):
         return "Present"
     elif now >= attendance_cutoff_time:
         return "Late"
-    else:
-        return "Absent"
+
 
 def get_class_time_input():
     class_start_time_str = input("Enter the class start time (format: HH:MM): ")
@@ -48,6 +47,7 @@ def get_class_time_input():
     attendance_cutoff_time = datetime.strptime(attendance_cutoff_time_str, "%H:%M").time()
 
     return class_start_time, attendance_cutoff_time
+
 
 async def markattendanceasync(stu_id, class_start_time, attendance_cutoff_time):
     # Get the current date and time
@@ -86,6 +86,7 @@ async def markattendanceasync(stu_id, class_start_time, attendance_cutoff_time):
         'time': current_time
     }
     student_folder_ref.set(student_data)
+
 
 async def main():
     # Ask the user for the class start time and attendance cutoff time
