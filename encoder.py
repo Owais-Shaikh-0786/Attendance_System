@@ -15,14 +15,45 @@ db = firestore.client()
 bucket = storage.bucket()
 
 
+def create_data_dictionary(image_id):
+    # Prompt the user to enter details for the image
+    stu_name = input(f"Enter Student Name for {image_id}: ")
+    data = {
+        'id': image_id,
+        'name': stu_name,
+        # Add more fields if needed, for example: 'path': '', 'date_taken': '', etc.
+    }
+    return data
+
+
+def upload_data_to_firestore(data, collection_name, document_name):
+    doc_ref = db.collection(collection_name).document(document_name)
+    doc_ref.set(data)
+    print(f"Data uploaded to Firestore for {collection_name}/{document_name}.")
+
+
 def upload_images_to_storage(folder_path):
     path_list = os.listdir(folder_path)
 
     for path in path_list:
+        image_id = os.path.splitext(path)[0]
         file_name = f'{folder_path}/{path}'
+
+        data = create_data_dictionary(image_id)  # Create a data dictionary for the image
+
         blob = bucket.blob(file_name)
-        blob.upload_from_filename(file_name)
-        print("Image uploaded:", path)
+        blob.upload_from_filename(file_name)  # Upload the image without metadata
+
+        # Set the metadata for the blob
+        blob.metadata = data
+        blob.patch()
+
+        # Upload the data to Firestore
+        collection_name = "studentsDetails"  # You can change this to the desired collection name
+        document_name = image_id
+        upload_data_to_firestore(data, collection_name, document_name)
+
+        print("Image and data uploaded:", path)
 
 
 def download_images_from_storage(folder_path):
@@ -51,7 +82,7 @@ def findencoding(images_list):
     return encodeList
 
 
-print('Uploading Images to Firebase Storage ...')
+print('Uploading Images and Data to Firebase Storage and Firestore ...')
 folderPath = 'dataSet'  # Assuming the folder name is "dataSet"
 upload_images_to_storage(folderPath)
 
