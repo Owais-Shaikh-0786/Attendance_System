@@ -14,6 +14,7 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 bucket = storage.bucket()
 
+
 def upload_images_to_storage(folder_path):
     path_list = os.listdir(folder_path)
 
