@@ -19,7 +19,7 @@ for path in modePathList:
 print(len(imgModeList))
 
 print("Loading Encode File ...")
-with open('EncodeFile.p', 'rb') as file:
+with open('encodeFile.p', 'rb') as file:
     encodeListKnownWithIds = pickle.load(file)
 encodeListKnown, studentIds = encodeListKnownWithIds
 print("Encode File Loaded")
