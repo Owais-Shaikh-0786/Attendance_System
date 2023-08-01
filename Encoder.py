@@ -14,6 +14,15 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 bucket = storage.bucket()
 
+def upload_images_to_storage(folder_path):
+    path_list = os.listdir(folder_path)
+
+    for path in path_list:
+        file_name = f'{folder_path}/{path}'
+        blob = bucket.blob(file_name)
+        blob.upload_from_filename(file_name)
+        print("Image uploaded:", path)
+
 
 def download_images_from_storage(folder_path):
     path_list = os.listdir(folder_path)
@@ -41,7 +50,9 @@ def findencoding(images_list):
     return encodeList
 
 
-folderPath = 'DataSet'  # Assuming the folder name is "DataSet"
+print('Uploading Images to Firebase Storage ...')
+folderPath = 'dataSet'  # Assuming the folder name is "DataSet"
+upload_images_to_storage(folderPath)
 
 print('Downloading Images from Firebase Storage ...')
 imgList, studentIds = download_images_from_storage(folderPath)
@@ -51,7 +62,7 @@ encodeListKnown = findencoding(imgList)
 encodeListKnownWithIds = [encodeListKnown, studentIds]
 print('Encoding Complete')
 
-file = open("EncodeFile.p", 'wb')
+file = open("encodeFile.p", 'wb')
 pickle.dump(encodeListKnownWithIds, file)
 file.close()
 
