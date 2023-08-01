@@ -51,7 +51,7 @@ def findencoding(images_list):
 
 
 print('Uploading Images to Firebase Storage ...')
-folderPath = 'dataSet'  # Assuming the folder name is "DataSet"
+folderPath = 'dataSet'  # Assuming the folder name is "dataSet"
 upload_images_to_storage(folderPath)
 
 print('Downloading Images from Firebase Storage ...')
