@@ -26,7 +26,9 @@ print("Encode File Loaded")
 
 # Initialize Firebase Admin SDK
 cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    'storageBucket': "attendance-system-0786.appspot.com"
+})
 db = firestore.client()
 
 
