@@ -32,6 +32,7 @@ firebase_admin.initialize_app(cred, {
 })
 db = firestore.client()
 
+
 # Function to get attendance status based on time
 def get_attendance_status(class_start_time, attendance_cutoff_time):
     now = datetime.now().time()
@@ -40,6 +41,7 @@ def get_attendance_status(class_start_time, attendance_cutoff_time):
         return "Present"
     elif now >= attendance_cutoff_time:
         return "Late"
+
 
 # Function to get class start time and attendance cutoff time from user
 def get_class_time_input():
@@ -50,6 +52,7 @@ def get_class_time_input():
     attendance_cutoff_time = datetime.strptime(attendance_cutoff_time_str, "%H:%M").time()
 
     return class_start_time, attendance_cutoff_time
+
 
 # Function to retrieve student details from Firestore
 def retrieve_student_details():
@@ -65,9 +68,9 @@ def retrieve_student_details():
 
     return student_details
 
-# Asynchronous function to mark attendance for a student
-async def markattendanceasync(student_details, stu_id, class_start_time, attendance_cutoff_time):
 
+
+async def markattendanceasync(student_details, stu_id, class_start_time, attendance_cutoff_time):
     student_data = None
     for student in student_details:
         if student.get("id") == stu_id:
@@ -96,12 +99,19 @@ async def markattendanceasync(student_details, stu_id, class_start_time, attenda
 
     student_folder_ref = student_doc_ref.collection("Students").document(stu_id)
 
+    # Check if attendance status has already been set
+    existing_data = student_folder_ref.get().to_dict()
+    if existing_data and existing_data.get('status'):
+        print(f"Attendance status already set for Student ID {stu_id}.")
+        return
+
     student_data = {
         'name': student_name,
         'time': current_time,
         'status': student_status,
     }
     student_folder_ref.set(student_data)
+
 
 # Main asynchronous function
 async def main():
@@ -158,6 +168,7 @@ async def main():
 
     cap.release()
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
