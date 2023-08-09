@@ -16,7 +16,6 @@ modePathList = os.listdir(folderModePath)
 imgModeList = []
 for path in modePathList:
     imgModeList.append(cv2.imread(os.path.join(folderModePath, path)))
-print(len(imgModeList))
 
 # Load the encoded face data
 print("Loading Encode File ...")
@@ -33,16 +32,6 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 
 
-# Function to get attendance status based on time
-def get_attendance_status(class_start_time, attendance_cutoff_time):
-    now = datetime.now().time()
-
-    if class_start_time < now <= attendance_cutoff_time:
-        return "Present"
-    elif now >= attendance_cutoff_time:
-        return "Late"
-
-
 # Function to get class start time and attendance cutoff time from user
 def get_class_time_input():
     class_start_time_str = input("Enter the class start time (format: HH:MM): ")
@@ -54,7 +43,16 @@ def get_class_time_input():
     return class_start_time, attendance_cutoff_time
 
 
-# Function to retrieve student details from Firestore
+# Function to get attendance status based on time
+def get_attendance_status(class_start_time, attendance_cutoff_time):
+    now = datetime.now().time()
+
+    if class_start_time < now <= attendance_cutoff_time:
+        return "Present"
+    elif now >= attendance_cutoff_time:
+        return "Absent"
+
+
 def retrieve_student_details():
     student_details = []
 
@@ -66,11 +64,46 @@ def retrieve_student_details():
         if student_data:
             student_details.append(student_data)
 
-    return student_details
+    for student in student_details:
+        stu_id = student.get("id")
+        print("student_details id :", stu_id)
+
+    return student_details  # Return student details list
 
 
+def print_student_ids(folder_year, folder_month, folder_date):
+    student_folder_ref = (db.collection("Attendance").document(folder_year).collection(folder_month)
+                          .document(folder_date).collection("Students"))
 
-async def markattendanceasync(student_details, stu_id, class_start_time, attendance_cutoff_time):
+    # Iterate through student documents and print their IDs
+    for student_doc in student_folder_ref.stream():
+        print("Student ID:", student_doc.id)
+
+    student_ids_print = set(student_doc.id for student_doc in student_folder_ref.stream())
+
+    return student_ids_print
+
+
+def compare_student_ids():
+    now = datetime.now()
+
+    year_folder = now.strftime('%Y')
+    month_folder = now.strftime('%B')
+    date_folder = now.strftime('%d')
+
+    student_ids_details = set(student.get("id") for student in retrieve_student_details())
+    student_ids_print = print_student_ids(year_folder, month_folder, date_folder)
+
+    missing_ids = student_ids_details - student_ids_print
+
+    print("Missing IDs:", missing_ids)
+
+    return missing_ids
+
+
+# Function to retrieve student details from Firestore
+
+async def markattendanceasync(student_details, stu_id, class_start_time, attendance_cutoff_time, status=None):
     student_data = None
     for student in student_details:
         if student.get("id") == stu_id:
@@ -88,7 +121,7 @@ async def markattendanceasync(student_details, stu_id, class_start_time, attenda
     month_folder = now.strftime('%B')
     date_folder = now.strftime('%d')
 
-    student_status = get_attendance_status(class_start_time, attendance_cutoff_time)
+    student_status = status or get_attendance_status(class_start_time, attendance_cutoff_time)
 
     attendance_ref = db.collection("Attendance")
     year_doc_ref = attendance_ref.document(year_folder)
@@ -118,11 +151,14 @@ async def main():
     student_details = retrieve_student_details()
     class_start_time, attendance_cutoff_time = get_class_time_input()
 
+
     cap = cv2.VideoCapture(0)
     cap.set(3, 640)
     cap.set(4, 480)
 
     imgBackground = cv2.imread('background.png')
+
+    attendance_checked = False
 
     while True:
         success, img = cap.read()
@@ -162,6 +198,16 @@ async def main():
                 await asyncio.gather(*tasks)
 
         cv2.imshow("Attendance System", imgBackground)
+
+        now = datetime.now()
+        if not attendance_checked and now.time() > attendance_cutoff_time:
+            compare_student_ids()
+
+            missed_ids = compare_student_ids()
+            for stu_id in missed_ids:
+                await markattendanceasync(student_details, stu_id, class_start_time, attendance_cutoff_time,
+                                          status="Absent")
+            attendance_checked = True
 
         if cv2.waitKey(33) & 0xFF == ord('q'):
             break
