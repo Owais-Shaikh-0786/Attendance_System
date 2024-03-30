@@ -1,8 +1,0 @@
-1. Initially, I encountered difficulties while installing the "facerecognition" library.
-2. I experienced a specific challenge involving false unknown face detection. The program mistakenly associated a detected face with a name that resembled an existing image, even though the correct data for that individual was unavailable.
-3. Another issue arose when I needed to create folders and subfolders automatically during code execution.
-4. I faced a problem where my program was increasing the attendance count after detecting each frame, leading to inaccurate results.
-5. Retrieving data for encoding posed another challenge for me.
-6. I also struggled with accurately recording the time of entry for attendance purposes. Additionally, determining whether a student was on time or late, and whether they were present or absent, proved to be complex.
-7. Managing the assignment of IDs and additional details became quite messy.
-8. Finally, the process of retrieving and displaying information posed a significant challenge.
